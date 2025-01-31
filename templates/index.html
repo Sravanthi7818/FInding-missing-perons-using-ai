@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Missing Person Identification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+
+        header {
+            background: #007BFF;
+            color: white;
+            padding: 1rem 0;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #ddd;
+            cursor: pointer;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            font-size: 16px;
+            background: #f4f4f9;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .tab.active {
+            background: #007BFF;
+            color: white;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        form input, form textarea, form button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        form button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        form button:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        table th {
+            background: #007BFF;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Missing Person Identification</h1>
+    </header>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="add-person">Add Missing Person</div>
+            <div class="tab" data-tab="view-persons">Missing Persons List</div>
+            <div class="tab" data-tab="recognition">Recognition/Match Tracing</div>
+            <div class="tab" data-tab="video-recognition">Video Recognition</div>
+            <div class="tab" data-tab="solved-cases">Solved Cases</div>
+        </div>
+        <div class="tab-content active" id="add-person">
+            <form id="addPersonForm">
+                <input type="text" id="name" placeholder="Name" required>
+                <input type="number" id="age" placeholder="Age" required>
+                <textarea id="description" placeholder="Description" rows="4" required></textarea>
+                <input type="tel" id="mobile" placeholder="Mobile number" required>
+                <input type="file" id="image" accept="image/*" required>
+                <button type="submit">Add Person</button>
+            </form>
+        </div>
+        <div class="tab-content" id="view-persons">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Status</th>
+                        <th>Description</th>
+                        <th>Image</th>
+                    </tr>
+                </thead>
+                <tbody id="personsTableBody"></tbody>
+            </table>
+        </div>
+        <div class="tab-content" id="recognition">
+            <form id="recognitionForm">
+                <h3>Upload Image for Matching</h3>
+                <input type="file" id="traceImage" accept="image/*" required>
+                <input type="text" id="tracedLocation" placeholder="Enter Traced Location" required> <!-- New input for location -->
+                
+                <button type="submit">Find Match</button>
+            </form>
+            <div id="matchResult" style="margin-top: 20px;"></div>
+        </div>
+        <div class="tab-content active" id="recognition">
+            <form id="recognitionForm">
+                <h3>Upload Image for Matching</h3>
+                <input type="file" id="traceImage" accept="image/*" required>
+                <button type="submit">Find Match</button>
+            </form>
+            <div id="matchResult" style="margin-top: 20px;"></div>
+        </div>
+
+        <div class="tab-content" id="video-recognition">
+            <form id="videorecognitionForm">
+                <h3>Upload Video for Matching</h3>
+                <input type="file" id="traceVideo" accept="video/*" required>
+                <input type="text" id="location" placeholder="Enter Location" required>
+                <button type="submit">Find Match</button>
+            </form>
+            <div id="videoMatchResult" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Solved Cases Tab (New) -->
+        <div class="tab-content" id="solved-cases">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Age</th>
+                        <th>Traced Location</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="solvedCasesTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching logic
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Add missing person
+        document.getElementById('addPersonForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('name', document.getElementById('name').value);
+            formData.append('age', document.getElementById('age').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('mobile',document.getElementById('mobile').value);
+            formData.append('image', document.getElementById('image').files[0]);
+
+            const response = await fetch('/add_missing_person', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                alert('Person added successfully!');
+                fetchMissingPersons();
+            } else {
+                alert('Error adding person.');
+            }
+        });
+
+        // Fetch and display missing persons
+        async function fetchMissingPersons() {
+            const response = await fetch('/get_missing_persons');
+            const persons = await response.json();
+            const tableBody = document.getElementById('personsTableBody');
+
+            tableBody.innerHTML = '';
+            persons.forEach(person => {
+                const row = `<tr>
+                    <td>${person.name}</td>
+                    <td>${person.age}</td>
+                    <td>${person.status}</td>
+                    <td>${person.description}</td>
+                    <td><img src="${person.image_path}" alt="${person.name}" width="50"></td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Recognition/Match Tracing
+        document.getElementById('recognitionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('image', document.getElementById('traceImage').files[0]);
+            formData.append('location', document.getElementById('tracedLocation').value);  // Get traced location input
+
+            const response = await fetch('/match_person', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            const matchResultDiv = document.getElementById('matchResult');
+
+            if (response.ok && result.message !== "No match found.") {
+                matchResultDiv.innerHTML = `<h3>Match Found:</h3>
+                    <p><strong>Name:</strong> ${result.name}</p>
+                    <p><strong>Age:</strong> ${result.age}</p>
+                    <p><strong>Description:</strong> ${result.description}</p>
+                    <p><strong>Confidence:</strong> ${result.confidence}%</p>
+                    <p><strong>Traced Location:</strong> ${result.traced_location}</p> <!-- Location from match result -->
+                    <img src="${result.image_path}" alt="${result.name}" width="100"><br>
+                    <button id="markSolvedBtn" onclick="markAsSolved('${result.id}', '${document.getElementById('tracedLocation').value}')">Mark as Solved</button>`; <!-- Button to mark as solved, passing traced location -->
+
+                
+            } else {
+                matchResultDiv.innerHTML = `<h3>Match Not Found</h3>`;
+            }
+            
+        });recognition
+
+        //video 
+        // Video recognition form submission
+        document.getElementById('videorecognitionForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData();
+                formData.append('video', document.getElementById('traceVideo').files[0]);
+                formData.append('location', document.getElementById('tracedLocation').value);
+
+                const videoMatchResultDiv = document.getElementById('videoMatchResult');
+                videoMatchResultDiv.innerHTML = "<h3>Processing video, please wait...</h3>"; // Indicate processing
+
+                try {
+                    const response = await fetch('/matchvideo_person', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    console.log("Response received:", response); // Debugging log
+                    const result = await response.json();
+                    console.log("API Response:", result); // Debugging log
+
+                    if (response.ok && result.message === "Match found in video!") {
+                        videoMatchResultDiv.innerHTML = `
+                            <h3>${result.message}</h3>
+                            <p><strong>Name:</strong> ${result.name}</p>
+                            <p><strong>Age:</strong> ${result.age}</p>
+                            <p><strong>Description:</strong> ${result.description}</p>
+                            <p><strong>Frame Found:</strong> ${result.frame}</p>
+                            <p><strong>Time Found:</strong> ${result.time}s</p>
+                            <p><strong>Confidence:</strong> ${result.confidence}%</p>
+                            <img src="${result.matched_frame_path}" alt="Matched Frame" width="100">
+                            <img src="${result.image_path}" alt="${result.name}" width="100"><br/>
+                            <button id="sendMatchedImageBtn" onclick="sendMatchedImage('${result.image_path}', '${result.name}')">
+                                Send Image to Registered Mobile
+                            </button>
+                        `;
+                    } else {
+                        videoMatchResultDiv.innerHTML = `<h3>No match found in video.</h3>`;
+                    }
+                } catch (error) {
+                    console.error("Error:", error);
+                    videoMatchResultDiv.innerHTML = `<h3>Error processing video: ${error.message}</h3>`;
+                }
+            });
+
+
+
+
+        // Mark case as solved and update the record
+        async function markAsSolved(personId, tracedLocation) {
+            const response = await fetch('/update_case_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                id: personId,
+                traced_location: tracedLocation
+                })
+
+            });
+
+            if (response.ok) {
+                alert('Case marked as solved.');
+                fetchSolvedCases(); // Refresh solved cases list
+            } else {
+                alert('Error updating case status.');
+            }
+        }
+
+
+        async function sendMatchedImage(imagePath, name) {
+        const response = await fetch('/send_matched_image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                image_path: imagePath,
+                name: name
+            })
+        });
+
+        if (response.ok) {
+            alert('Image sent successfully to the registered mobile!');
+        } else {
+            alert('Error sending image to the registered mobile.');
+        }
+    }
+
+
+
+        // Fetch and display solved cases
+        async function fetchSolvedCases() {
+            const response = await fetch('/get_solved_cases');
+            const cases = await response.json();
+            const tableBody = document.getElementById('solvedCasesTableBody');
+
+            tableBody.innerHTML = '';
+            cases.forEach(solvedCase => {
+                const row = `<tr>
+                    <td>${solvedCase.name}</td>
+                    <td>${solvedCase.age}</td>
+                    <td>${solvedCase.traced_location || 'Not Provided'}</td> <!-- Display traced location -->
+                    <td>Resolved</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Initial fetch
+        fetchSolvedCases();  // Fetch solved cases on load
+
+        // Initial fetch
+        fetchMissingPersons();
+    </script>
+</body>
+</html>
