@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  missing-person-app:
+    build: .
+    container_name: missing-person-app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data  # Persist uploaded files & database
+    restart: unless-stopped
